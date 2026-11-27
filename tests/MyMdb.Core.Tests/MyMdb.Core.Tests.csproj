@@ -22,4 +22,8 @@
     <ProjectReference Include="..\..\src\MyMdb.Core\MyMdb.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Fixtures\emdb.dat" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
