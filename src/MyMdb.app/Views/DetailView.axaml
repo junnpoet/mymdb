@@ -1,0 +1,177 @@
+<ContentPage xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MyMdb.app.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="440" d:DesignHeight="820"
+             Header="{Binding Title}"
+             x:DataType="vm:DetailViewModel"
+             x:Class="MyMdb.app.Views.DetailView">
+
+    <ScrollViewer>
+        <StackPanel Spacing="16" Margin="0,0,0,24">
+            <!-- Backdrop banner -->
+            <Border Height="190"
+                    Background="#22808080"
+                    ClipToBounds="True">
+                <Image Source="{Binding Backdrop}"
+                       Stretch="UniformToFill" />
+            </Border>
+
+            <!-- Header with Poster + primary info -->
+            <Grid ColumnDefinitions="100,*" ColumnSpacing="14" Margin="16,0">
+                <Border Grid.Column="0"
+                        Width="100"
+                        Height="150"
+                        CornerRadius="8"
+                        ClipToBounds="True"
+                        Background="#22808080">
+                    <Image Source="{Binding Poster}"
+                           Stretch="UniformToFill" />
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="5">
+                    <TextBlock Text="{Binding Title}"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding OriginalTitle}"
+                               IsVisible="{Binding HasOriginalTitle}"
+                               FontSize="13"
+                               FontStyle="Italic"
+                               Opacity="0.7"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding SummaryMeta}"
+                               FontSize="13"
+                               Opacity="0.8"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding RatingsLine}"
+                               IsVisible="{Binding HasRatings}"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#E0A800"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding WatchStatusLine}"
+                               FontSize="12"
+                               Opacity="0.75"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Tagline -->
+            <TextBlock Text="{Binding Tagline}"
+                       IsVisible="{Binding HasTagline}"
+                       Margin="16,0"
+                       FontStyle="Italic"
+                       Opacity="0.85"
+                       TextWrapping="Wrap" />
+
+            <!-- Synopsis -->
+            <StackPanel Margin="16,0" Spacing="6" IsVisible="{Binding HasPlot}">
+                <TextBlock Text="Synopsis" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Plot}" TextWrapping="Wrap" LineHeight="21" />
+            </StackPanel>
+
+            <!-- Details -->
+            <StackPanel Margin="16,0" Spacing="6">
+                <TextBlock Text="Details" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock IsVisible="{Binding HasGenres}" TextWrapping="Wrap">
+                    <Run Text="Genres: " FontWeight="SemiBold" />
+                    <Run Text="{Binding GenresText}" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding HasLanguages}" TextWrapping="Wrap">
+                    <Run Text="Languages: " FontWeight="SemiBold" />
+                    <Run Text="{Binding LanguagesText}" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding HasStudio}" TextWrapping="Wrap">
+                    <Run Text="Studio: " FontWeight="SemiBold" />
+                    <Run Text="{Binding Studio}" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding HasCollection}" TextWrapping="Wrap">
+                    <Run Text="Collection: " FontWeight="SemiBold" />
+                    <Run Text="{Binding CollectionName}" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding HasCertification}" TextWrapping="Wrap">
+                    <Run Text="Certification: " FontWeight="SemiBold" />
+                    <Run Text="{Binding Certification}" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding HasDirectors}" TextWrapping="Wrap">
+                    <Run Text="Director: " FontWeight="SemiBold" />
+                    <Run Text="{Binding DirectorsText}" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding HasWriters}" TextWrapping="Wrap">
+                    <Run Text="Writers: " FontWeight="SemiBold" />
+                    <Run Text="{Binding WritersText}" />
+                </TextBlock>
+                <TextBlock IsVisible="{Binding HasComposers}" TextWrapping="Wrap">
+                    <Run Text="Music: " FontWeight="SemiBold" />
+                    <Run Text="{Binding ComposersText}" />
+                </TextBlock>
+            </StackPanel>
+
+            <!-- Cast horizontal strip -->
+            <StackPanel Margin="16,0" Spacing="8" IsVisible="{Binding HasCast}">
+                <TextBlock Text="Cast" FontSize="16" FontWeight="SemiBold" />
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Cast}" Margin="0,0,0,14">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="10" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CastMemberViewModel">
+                                <StackPanel Width="92" Spacing="4">
+                                    <Border Width="92"
+                                            Height="132"
+                                            CornerRadius="6"
+                                            ClipToBounds="True"
+                                            Background="#22808080">
+                                        <Image Source="{Binding Photo}"
+                                               Stretch="UniformToFill" />
+                                    </Border>
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding CharacterText}"
+                                               IsVisible="{Binding HasCharacter}"
+                                               FontSize="11"
+                                               Opacity="0.7"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </StackPanel>
+
+            <!-- Comments -->
+            <StackPanel Margin="16,0" Spacing="6" IsVisible="{Binding HasComments}">
+                <TextBlock Text="Comments" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Comments}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Links -->
+            <StackPanel Margin="16,0" Spacing="4" IsVisible="{Binding HasLinks}">
+                <TextBlock Text="Links" FontSize="16" FontWeight="SemiBold" />
+                <SelectableTextBlock Text="{Binding WebLink}"
+                                     IsVisible="{Binding HasWebLink}"
+                                     FontSize="12"
+                                     Opacity="0.8"
+                                     TextWrapping="Wrap" />
+                <SelectableTextBlock Text="{Binding Location}"
+                                     IsVisible="{Binding HasLocation}"
+                                     FontSize="12"
+                                     Opacity="0.8"
+                                     TextWrapping="Wrap" />
+                <SelectableTextBlock Text="{Binding TrailerUrl}"
+                                     IsVisible="{Binding HasTrailer}"
+                                     FontSize="12"
+                                     Opacity="0.8"
+                                     TextWrapping="Wrap" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</ContentPage>

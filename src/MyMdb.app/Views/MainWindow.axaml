@@ -7,6 +7,8 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MyMdb.app.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="MyMdb.app">
+        Width="440"
+        Height="820"
+        Title="MyMdb">
         <views:MainView />
 </Window>
