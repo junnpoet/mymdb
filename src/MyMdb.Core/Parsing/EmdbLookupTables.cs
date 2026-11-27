@@ -22,7 +22,6 @@ internal static class EmdbLookupTables
         ['R'] = "Romance",
         ['S'] = "Sci-Fi",
         ['T'] = "Thriller",
-        ['#'] = "TV Series",
         ['O'] = "War",
         ['W'] = "Western",
     }.ToFrozenDictionary();

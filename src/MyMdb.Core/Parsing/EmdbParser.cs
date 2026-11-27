@@ -67,7 +67,9 @@ public sealed class EmdbParser
         var taglineParts = SplitParts(raw.Tagline);
         var ratingParts = SplitParts(raw.Rating);
 
-        var (isTvSeries, seasonsRange, episodeCount) = ParseSeriesInfo(GetPart(genreParts, 4));
+        var genreCodes = GetPart(genreParts, 0);
+        var isTvSeries = genreCodes?.Contains('#', StringComparison.Ordinal) == true;
+        var (seasonsRange, episodeCount) = ParseSeriesInfo(GetPart(genreParts, 4), isTvSeries);
         var flags = ParseInt(GetPart(yearParts, 9)) ?? 0;
 
         return new MediaEntry
@@ -171,23 +173,17 @@ public sealed class EmdbParser
             ? date
             : null;
 
-    private static (bool IsTvSeries, string? SeasonsRange, int? EpisodeCount) ParseSeriesInfo(string? value)
+    private static (string? SeasonsRange, int? EpisodeCount) ParseSeriesInfo(string? value, bool isTvSeries)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        if (!isTvSeries || string.IsNullOrWhiteSpace(value))
         {
-            return (false, null, null);
+            return (null, null);
         }
 
         var parts = value.Split('@');
-        var isTvSeries = parts.Length > 1 && parts[1] == "1";
-        if (!isTvSeries)
-        {
-            return (false, null, null);
-        }
-
         var seasonsRange = NullIfEmpty(parts[0]);
         var episodeCount = parts.Length > 2 ? ParsePositiveInt(parts[2]) : null;
-        return (true, seasonsRange, episodeCount);
+        return (seasonsRange, episodeCount);
     }
 
     private static double? ParseImdbRating(string? hexValue)

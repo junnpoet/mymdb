@@ -158,6 +158,52 @@ public sealed class EmdbParserTests
         Assert.Equal("https://www.netflix.com/title/82027563", entry.WebLink);
     }
 
+    [Fact]
+    public void Parse_MovieWithStatusOneAndOngoingTvSeries_DetectsTvSeriesByHashMarker()
+    {
+        var json = $$"""
+        {
+            "version": "80",
+            "movies": [
+                {
+                    "title": "Mommy{{Rs}}{{Rs}}{{Rs}}-1",
+                    "year": "2014{{Rs}}{{Rs}}139{{Rs}}#CA{{Rs}}0{{Rs}}0{{Rs}}@0{{Rs}}{{Rs}}-1{{Rs}}256{{Rs}}1{{Rs}}0{{Rs}}0{{Rs}}0{{Rs}}253{{Rs}}{{Rs}}",
+                    "genres": "D{{Rs}}3612616|0{{Rs}}20250101{{Rs}}{{Rs}}1@1@0{{Rs}}{{Rs}}0{{Rs}}{{Rs}}20250101{{Rs}}{{Rs}}265177",
+                    "cast": "{{Rs}}",
+                    "plot": "",
+                    "tagline": "{{Rs}}{{Rs}}",
+                    "rating": "439{{Rs}}00{{Rs}}00{{Rs}}00{{Rs}}00{{Rs}}F{{Rs}}{{Rs}}60000{{Rs}}0{{Rs}}999999074{{Rs}}"
+                },
+                {
+                    "title": "The Boys{{Rs}}{{Rs}}Amazon{{Rs}}-1",
+                    "year": "2019{{Rs}}{{Rs}}4941{{Rs}}#US{{Rs}}0{{Rs}}0{{Rs}}@0{{Rs}}{{Rs}}-1{{Rs}}256{{Rs}}1{{Rs}}0{{Rs}}0{{Rs}}0{{Rs}}18{{Rs}}{{Rs}}",
+                    "genres": "#{{Rs}}1190634|0{{Rs}}20240501{{Rs}}{{Rs}}01-04@2@81{{Rs}}{{Rs}}0{{Rs}}{{Rs}}20240501{{Rs}}{{Rs}}76479",
+                    "cast": "{{Rs}}",
+                    "plot": "",
+                    "tagline": "{{Rs}}{{Rs}}",
+                    "rating": "43F{{Rs}}00{{Rs}}00{{Rs}}00{{Rs}}00{{Rs}}E{{Rs}}{{Rs}}700000{{Rs}}0{{Rs}}999999000{{Rs}}"
+                }
+            ]
+        }
+        """;
+
+        var parser = new EmdbParser();
+        using var stream = ToUtf16LeStream(json);
+
+        var entries = parser.Parse(stream).Entries;
+
+        var mommy = Assert.Single(entries, e => e.Id == 253);
+        Assert.False(mommy.IsTvSeries);
+        Assert.Null(mommy.SeasonsRange);
+        Assert.Null(mommy.EpisodeCount);
+
+        var theBoys = Assert.Single(entries, e => e.Id == 18);
+        Assert.True(theBoys.IsTvSeries);
+        Assert.Equal("01-04", theBoys.SeasonsRange);
+        Assert.Equal(81, theBoys.EpisodeCount);
+        Assert.Empty(theBoys.Genres);
+    }
+
     private static MemoryStream ToUtf16LeStream(string text)
     {
         var preamble = Encoding.Unicode.GetPreamble();

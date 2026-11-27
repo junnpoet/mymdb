@@ -46,5 +46,15 @@ public sealed class EmdbRealDatabaseTests
         Assert.Equal("01-05", breakingBad.SeasonsRange);
         Assert.Equal(9.5, breakingBad.ImdbRating);
         Assert.True(breakingBad.IsFavorite);
+
+        var mommy = Assert.Single(catalog.Entries, e => e.Id == 253);
+        Assert.False(mommy.IsTvSeries);
+
+        var winaypacha = Assert.Single(catalog.Entries, e => e.Id == 93);
+        Assert.False(winaypacha.IsTvSeries);
+
+        var theBoys = Assert.Single(catalog.Entries, e => e.Id == 18);
+        Assert.True(theBoys.IsTvSeries);
+        Assert.Equal("01-04", theBoys.SeasonsRange);
     }
 }
