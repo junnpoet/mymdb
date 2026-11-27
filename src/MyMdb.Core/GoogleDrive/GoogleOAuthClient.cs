@@ -77,6 +77,8 @@ public sealed class GoogleOAuthClient
 
     private GoogleOAuthToken? _cachedToken;
 
+    public bool HasSavedToken => _cachedToken is not null || File.Exists(_tokenFilePath);
+
     public GoogleOAuthClient(
         HttpClient httpClient,
         GoogleOAuthConfig config,

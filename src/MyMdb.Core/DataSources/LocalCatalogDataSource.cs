@@ -8,6 +8,9 @@ public sealed class LocalCatalogDataSource : ICatalogDataSource
     private readonly EmdbParser _parser = new();
 
     public string BaseDirectory { get; }
+    public bool RequiresAuthentication => false;
+    public bool SupportsSignOut => false;
+    public void SignOut() { }
 
     public LocalCatalogDataSource(string baseDirectory)
     {

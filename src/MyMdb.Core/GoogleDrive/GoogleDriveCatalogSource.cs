@@ -41,6 +41,11 @@ public sealed class GoogleDriveCatalogSource : ICatalogDataSource
     private string CachedDatPath => Path.Combine(_cacheDirectory, "emdb.dat");
     private string IndexPath => Path.Combine(_cacheDirectory, "drive-index.json");
 
+    public bool RequiresAuthentication => !_oauthClient.HasSavedToken;
+    public bool SupportsSignOut => true;
+
+    public void SignOut() => _oauthClient.ClearSavedToken();
+
     public async Task<Catalog> LoadCatalogAsync(bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
         await _syncLock.WaitAsync(cancellationToken);
