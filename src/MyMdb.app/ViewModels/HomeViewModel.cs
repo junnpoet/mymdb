@@ -1,0 +1,9 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace MyMdb.app.ViewModels;
+
+public partial class HomeViewModel : ViewModelBase
+{
+    [ObservableProperty]
+    public partial string Greeting { get; set; } = "Welcome to Avalonia!";
+}

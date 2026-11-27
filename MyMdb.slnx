@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/MyMdb.app.Desktop/MyMdb.app.Desktop.csproj" />
+    <Project Path="src/MyMdb.app/MyMdb.app.csproj" />
     <Project Path="src/MyMdb.Core/MyMdb.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
