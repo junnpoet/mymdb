@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:MyMdb.app.ViewModels"
              mc:Ignorable="d" d:DesignWidth="440" d:DesignHeight="820"
-             Header="MyMdb"
+             Header="MyMDB"
              x:DataType="vm:HomeViewModel"
              x:Class="MyMdb.app.Views.HomeView">
 
@@ -44,73 +44,115 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Status / Error -->
+        <!-- Genre filter / Status / Sync / Error -->
         <StackPanel Grid.Row="2" Spacing="4">
-            <TextBlock Text="{Binding StatusText}"
-                       FontSize="12"
-                       Opacity="0.7" />
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <ComboBox Grid.Column="0"
+                          ItemsSource="{Binding AvailableGenres}"
+                          SelectedItem="{Binding SelectedGenre}"
+                          MinWidth="135"
+                          FontSize="12" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusText}"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Opacity="0.7"
+                           TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="2"
+                        Content="Sync"
+                        Command="{Binding SyncCommand}"
+                        IsEnabled="{Binding !IsLoading}"
+                        FontSize="12"
+                        Padding="10,4" />
+            </Grid>
             <TextBlock Text="{Binding ErrorMessage}"
                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                        Foreground="IndianRed"
                        TextWrapping="Wrap" />
         </StackPanel>
 
-        <!-- Virtualized catalog list -->
-        <ListBox Grid.Row="3"
-                 Name="CatalogList"
-                 ItemsSource="{Binding FilteredEntries}"
-                 SelectionChanged="CatalogList_SelectionChanged"
-                 ContainerPrepared="CatalogList_ContainerPrepared"
-                 Background="Transparent"
-                 BorderThickness="0">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="vm:MediaItemViewModel">
-                    <Grid ColumnDefinitions="56,*" ColumnSpacing="12" Margin="0,4">
-                        <Border Grid.Column="0"
-                                Width="56"
-                                Height="84"
-                                CornerRadius="6"
-                                ClipToBounds="True"
-                                Background="#22808080">
-                            <Image Source="{Binding Poster}"
-                                   Stretch="UniformToFill" />
-                        </Border>
+        <!-- Paginated catalog list + Load More footer -->
+        <ScrollViewer Grid.Row="3">
+            <StackPanel Spacing="10">
+                <ListBox Name="CatalogList"
+                         ItemsSource="{Binding FilteredEntries}"
+                         SelectionChanged="CatalogList_SelectionChanged"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MediaItemViewModel">
+                            <Grid ColumnDefinitions="56,*" ColumnSpacing="12" Height="92" Margin="0,4">
+                                <Border Grid.Column="0"
+                                        Width="56"
+                                        Height="84"
+                                        CornerRadius="6"
+                                        ClipToBounds="True"
+                                        Background="#22808080">
+                                    <Image Source="{Binding Poster}"
+                                           Stretch="UniformToFill" />
+                                </Border>
 
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                            <TextBlock Text="{Binding Title}"
-                                       FontSize="15"
-                                       FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding MetaLine}"
-                                       FontSize="12"
-                                       Opacity="0.75" />
-                            <TextBlock Text="{Binding GenresLine}"
-                                       FontSize="12"
-                                       Opacity="0.65"
-                                       TextTrimming="CharacterEllipsis" />
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
-                                <TextBlock Text="{Binding RatingText}"
-                                           IsVisible="{Binding HasRating}"
-                                           FontSize="12"
-                                           FontWeight="SemiBold"
-                                           Foreground="#E0A800" />
-                                <TextBlock Text="TV"
-                                           IsVisible="{Binding IsTvSeries}"
-                                           FontSize="11"
-                                           Opacity="0.75" />
-                                <TextBlock Text="Watched"
-                                           IsVisible="{Binding IsWatched}"
-                                           FontSize="11"
-                                           Foreground="#4CAF50" />
-                                <TextBlock Text="♥"
-                                           IsVisible="{Binding IsFavorite}"
-                                           FontSize="11"
-                                           Foreground="#E57373" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                    <TextBlock Text="{Binding Title}"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding MetaLine}"
+                                               FontSize="12"
+                                               Opacity="0.75" />
+                                    <TextBlock Text="{Binding GenresLine}"
+                                               FontSize="12"
+                                               Opacity="0.65"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                                        <TextBlock Text="{Binding RatingText}"
+                                                   IsVisible="{Binding HasRating}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#E0A800" />
+                                        <TextBlock Text="TV"
+                                                   IsVisible="{Binding IsTvSeries}"
+                                                   FontSize="11"
+                                                   Opacity="0.75" />
+                                        <TextBlock Text="Watched"
+                                                   IsVisible="{Binding IsWatched}"
+                                                   FontSize="11"
+                                                   Foreground="#4CAF50" />
+                                        <TextBlock Text="♥"
+                                                   IsVisible="{Binding IsFavorite}"
+                                                   FontSize="11"
+                                                   Foreground="#E57373" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Load more button / loading indicator -->
+                <Grid HorizontalAlignment="Center" Margin="0,4,0,16">
+                    <Button Content="Cargar más"
+                            Command="{Binding LoadMoreCommand}"
+                            IsVisible="{Binding ShowLoadMoreButton}"
+                            Padding="20,8" />
+                    <StackPanel IsVisible="{Binding IsLoadingMore}"
+                                Spacing="6"
+                                HorizontalAlignment="Center">
+                        <ProgressBar IsIndeterminate="{Binding IsLoadingMore}"
+                                     Width="140"
+                                     Height="4" />
+                        <TextBlock Text="Cargando..."
+                                   FontSize="12"
+                                   Opacity="0.7"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </ContentPage>

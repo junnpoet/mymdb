@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -12,8 +13,8 @@ namespace MyMdb.app.ViewModels;
 
 public sealed partial class MediaItemViewModel : ViewModelBase
 {
-    private readonly LocalEmdbCatalogService _catalogService;
-    private bool _posterRequested;
+    private readonly CatalogService _catalogService;
+    private Task? _posterLoadTask;
 
     public MediaEntry Entry { get; }
 
@@ -32,7 +33,7 @@ public sealed partial class MediaItemViewModel : ViewModelBase
     public string GenresLine { get; }
     public string SearchIndex { get; }
 
-    public MediaItemViewModel(MediaEntry entry, LocalEmdbCatalogService catalogService)
+    public MediaItemViewModel(MediaEntry entry, CatalogService catalogService)
     {
         Entry = entry;
         _catalogService = catalogService;
@@ -73,20 +74,15 @@ public sealed partial class MediaItemViewModel : ViewModelBase
         SearchIndex = string.Join(' ', searchable);
     }
 
-    public void EnsurePosterLoaded()
+    public Task EnsurePosterLoadedAsync(CancellationToken cancellationToken = default)
     {
-        if (_posterRequested)
-        {
-            return;
-        }
-
-        _posterRequested = true;
-        _ = LoadPosterAsync();
+        _posterLoadTask ??= LoadPosterAsync(cancellationToken);
+        return _posterLoadTask;
     }
 
-    private async Task LoadPosterAsync()
+    private async Task LoadPosterAsync(CancellationToken cancellationToken)
     {
-        var bitmap = await _catalogService.LoadImageAsync("Posters", Entry.MediaFileName, 140);
+        var bitmap = await _catalogService.LoadImageAsync("Posters", Entry.MediaFileName, 140, cancellationToken);
         if (bitmap is not null)
         {
             await Dispatcher.UIThread.InvokeAsync(() => Poster = bitmap);

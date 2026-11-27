@@ -8,8 +8,17 @@
              x:DataType="vm:DetailViewModel"
              x:Class="MyMdb.app.Views.DetailView">
 
-    <ScrollViewer>
-        <StackPanel Spacing="16" Margin="0,0,0,24">
+    <ContentPage.Styles>
+        <Style Selector="ScrollViewer.loading">
+            <Setter Property="Effect">
+                <BlurEffect Radius="12" />
+            </Setter>
+        </Style>
+    </ContentPage.Styles>
+
+    <Grid>
+        <ScrollViewer Classes.loading="{Binding IsLoadingImages}">
+            <StackPanel Spacing="16" Margin="0,0,0,24">
             <!-- Backdrop banner -->
             <Border Height="190"
                     Background="#22808080"
@@ -173,5 +182,26 @@
                                      TextWrapping="Wrap" />
             </StackPanel>
         </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+
+        <!-- Blurred loading overlay while downloading backdrop/poster -->
+        <Border IsVisible="{Binding IsLoadingImages}"
+                Background="#55000000">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    CornerRadius="12"
+                    Padding="20,14"
+                    Background="#CC1E1E1E">
+                <StackPanel Spacing="10" HorizontalAlignment="Center">
+                    <TextBlock Text="Loading images..."
+                               Foreground="White"
+                               FontSize="13"
+                               HorizontalAlignment="Center" />
+                    <ProgressBar IsIndeterminate="True"
+                                 Width="160"
+                                 Height="4" />
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
 </ContentPage>

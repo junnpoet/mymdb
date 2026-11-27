@@ -12,7 +12,7 @@ namespace MyMdb.app.ViewModels;
 
 public sealed partial class DetailViewModel : ViewModelBase
 {
-    private readonly LocalEmdbCatalogService _catalogService;
+    private readonly CatalogService _catalogService;
 
     public MediaEntry Entry { get; }
 
@@ -21,6 +21,9 @@ public sealed partial class DetailViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial Bitmap? Poster { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLoadingImages { get; set; } = true;
 
     public string Title => Entry.Title;
     public string? OriginalTitle => Entry.OriginalTitle;
@@ -82,7 +85,7 @@ public sealed partial class DetailViewModel : ViewModelBase
     public DetailViewModel(
         MediaEntry entry,
         IReadOnlyList<CollectionInfo> collections,
-        LocalEmdbCatalogService catalogService)
+        CatalogService catalogService)
     {
         Entry = entry;
         _catalogService = catalogService;
@@ -163,15 +166,22 @@ public sealed partial class DetailViewModel : ViewModelBase
 
     private async Task LoadImagesAsync()
     {
-        var backdropTask = _catalogService.LoadImageAsync("Backdrops", Entry.MediaFileName, 760);
-        var posterTask = _catalogService.LoadImageAsync("Posters", Entry.MediaFileName, 260);
-
-        await Task.WhenAll(backdropTask, posterTask);
-
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        try
         {
-            Backdrop = backdropTask.Result;
-            Poster = posterTask.Result;
-        });
+            var backdropTask = _catalogService.LoadImageAsync("Backdrops", Entry.MediaFileName, 760);
+            var posterTask = _catalogService.LoadImageAsync("Posters", Entry.MediaFileName, 260);
+
+            await Task.WhenAll(backdropTask, posterTask);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Backdrop = backdropTask.Result;
+                Poster = posterTask.Result;
+            });
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => IsLoadingImages = false);
+        }
     }
 }

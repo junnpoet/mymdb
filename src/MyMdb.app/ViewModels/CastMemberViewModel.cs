@@ -9,7 +9,7 @@ namespace MyMdb.app.ViewModels;
 
 public sealed partial class CastMemberViewModel : ViewModelBase
 {
-    private readonly LocalEmdbCatalogService _catalogService;
+    private readonly CatalogService _catalogService;
     private readonly CastMember _member;
 
     [ObservableProperty]
@@ -22,7 +22,7 @@ public sealed partial class CastMemberViewModel : ViewModelBase
 
     public bool HasCharacter => !string.IsNullOrWhiteSpace(_member.Character);
 
-    public CastMemberViewModel(CastMember member, LocalEmdbCatalogService catalogService)
+    public CastMemberViewModel(CastMember member, CatalogService catalogService)
     {
         _member = member;
         _catalogService = catalogService;

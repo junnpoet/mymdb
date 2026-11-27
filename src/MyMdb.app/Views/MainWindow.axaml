@@ -9,6 +9,6 @@
         Icon="/Assets/avalonia-logo.ico"
         Width="440"
         Height="820"
-        Title="MyMdb">
+        Title="MyMDB">
         <views:MainView />
 </Window>

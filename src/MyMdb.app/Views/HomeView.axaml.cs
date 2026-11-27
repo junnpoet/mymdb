@@ -31,14 +31,6 @@ public partial class HomeView : ContentPage
         }
     }
 
-    private void CatalogList_ContainerPrepared(object? sender, ContainerPreparedEventArgs e)
-    {
-        if (e.Container.DataContext is MediaItemViewModel item)
-        {
-            item.EnsurePosterLoaded();
-        }
-    }
-
     private async void CatalogList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (sender is not ListBox listBox
@@ -50,6 +42,7 @@ public partial class HomeView : ContentPage
         }
 
         listBox.SelectedItem = null;
+        Focus();
 
         await Navigation.PushAsync(new DetailView
         {

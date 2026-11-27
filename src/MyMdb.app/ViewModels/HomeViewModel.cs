@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,9 +13,15 @@ namespace MyMdb.app.ViewModels;
 
 public sealed partial class HomeViewModel : ViewModelBase
 {
-    private readonly LocalEmdbCatalogService _catalogService;
+    private const int PageSize = 20;
+    private const int MaxConcurrentPosterDownloads = 6;
+    private const string AllGenresOption = "All genres";
+
+    private readonly CatalogService _catalogService;
     private List<MediaItemViewModel> _allItems = new();
+    private List<MediaItemViewModel> _filteredAll = new();
     private IReadOnlyList<CollectionInfo> _collections = Array.Empty<CollectionInfo>();
+    private CancellationTokenSource? _pageLoadCts;
     private bool _loaded;
 
     [ObservableProperty]
@@ -24,7 +31,16 @@ public sealed partial class HomeViewModel : ViewModelBase
     public partial string SelectedFilter { get; set; } = "All";
 
     [ObservableProperty]
+    public partial string SelectedGenre { get; set; } = AllGenresOption;
+
+    [ObservableProperty]
     public partial bool IsLoading { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool IsLoadingMore { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasMoreItems { get; set; }
 
     [ObservableProperty]
     public partial string StatusText { get; set; } = "Loading catalog...";
@@ -32,16 +48,30 @@ public sealed partial class HomeViewModel : ViewModelBase
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
 
+    public bool ShowLoadMoreButton => HasMoreItems && !IsLoadingMore;
+
+    public ObservableCollection<string> AvailableGenres { get; } = new() { AllGenresOption };
     public ObservableCollection<MediaItemViewModel> FilteredEntries { get; } = new();
 
     public HomeViewModel()
-        : this(new LocalEmdbCatalogService())
+        : this(CatalogService.CreateDefault())
     {
     }
 
-    public HomeViewModel(LocalEmdbCatalogService catalogService)
+    public HomeViewModel(CatalogService catalogService)
     {
         _catalogService = catalogService;
+    }
+
+    partial void OnHasMoreItemsChanged(bool value) => OnPropertyChanged(nameof(ShowLoadMoreButton));
+    partial void OnIsLoadingMoreChanged(bool value) => OnPropertyChanged(nameof(ShowLoadMoreButton));
+
+    partial void OnSelectedGenreChanged(string value)
+    {
+        if (_loaded && !IsLoading && !string.IsNullOrEmpty(value))
+        {
+            _ = ApplyFiltersAsync();
+        }
     }
 
     public async Task InitializeAsync()
@@ -52,12 +82,53 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         _loaded = true;
+        await LoadCoreAsync(forceRefresh: false);
+    }
+
+    [RelayCommand]
+    private Task SyncAsync() => LoadCoreAsync(forceRefresh: true);
+
+    [RelayCommand]
+    private Task SearchAsync() => ApplyFiltersAsync();
+
+    [RelayCommand]
+    private async Task SetFilterAsync(string filter)
+    {
+        if (SelectedFilter == filter)
+        {
+            return;
+        }
+
+        SelectedFilter = filter;
+        await ApplyFiltersAsync();
+    }
+
+    [RelayCommand]
+    private async Task LoadMoreAsync()
+    {
+        if (IsLoadingMore || !HasMoreItems)
+        {
+            return;
+        }
+
+        var token = _pageLoadCts?.Token ?? CancellationToken.None;
+        await LoadNextPageAsync(token);
+    }
+
+    public DetailViewModel CreateDetailViewModel(MediaItemViewModel item) =>
+        new(item.Entry, _collections, _catalogService);
+
+    private async Task LoadCoreAsync(bool forceRefresh)
+    {
         IsLoading = true;
         ErrorMessage = null;
+        StatusText = forceRefresh
+            ? $"Syncing with {_catalogService.SourceLabel}..."
+            : $"Loading from {_catalogService.SourceLabel}...";
 
         try
         {
-            var catalog = await _catalogService.LoadCatalogAsync();
+            var catalog = await _catalogService.LoadCatalogAsync(forceRefresh);
             _collections = catalog.Collections;
             _allItems = catalog.Entries
                 .OrderByDescending(e => e.DateAdded ?? DateOnly.MinValue)
@@ -65,7 +136,25 @@ public sealed partial class HomeViewModel : ViewModelBase
                 .Select(e => new MediaItemViewModel(e, _catalogService))
                 .ToList();
 
-            ApplyFilters();
+            var genres = _allItems
+                .SelectMany(e => e.Entry.Genres)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            AvailableGenres.Clear();
+            AvailableGenres.Add(AllGenresOption);
+            foreach (var genre in genres)
+            {
+                AvailableGenres.Add(genre);
+            }
+
+            if (!AvailableGenres.Contains(SelectedGenre))
+            {
+                SelectedGenre = AllGenresOption;
+            }
+
+            await ApplyFiltersAsync();
         }
         catch (Exception ex)
         {
@@ -78,29 +167,13 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
-    public DetailViewModel CreateDetailViewModel(MediaItemViewModel item) =>
-        new(item.Entry, _collections, _catalogService);
-
-    [RelayCommand]
-    private void Search()
+    private async Task ApplyFiltersAsync()
     {
-        ApplyFilters();
-    }
+        _pageLoadCts?.Cancel();
+        _pageLoadCts?.Dispose();
+        _pageLoadCts = new CancellationTokenSource();
+        var token = _pageLoadCts.Token;
 
-    [RelayCommand]
-    private void SetFilter(string filter)
-    {
-        if (SelectedFilter == filter)
-        {
-            return;
-        }
-
-        SelectedFilter = filter;
-        ApplyFilters();
-    }
-
-    private void ApplyFilters()
-    {
         var query = SearchText.Trim();
         IEnumerable<MediaItemViewModel> matches = _allItems;
 
@@ -113,20 +186,87 @@ public sealed partial class HomeViewModel : ViewModelBase
             _ => matches,
         };
 
+        if (!string.IsNullOrEmpty(SelectedGenre)
+            && !string.Equals(SelectedGenre, AllGenresOption, StringComparison.Ordinal))
+        {
+            matches = matches.Where(m =>
+                m.Entry.Genres.Contains(SelectedGenre, StringComparer.OrdinalIgnoreCase));
+        }
+
         if (!string.IsNullOrEmpty(query))
         {
             matches = matches.Where(m =>
                 m.SearchIndex.Contains(query, StringComparison.OrdinalIgnoreCase));
         }
 
+        _filteredAll = matches.ToList();
         FilteredEntries.Clear();
-        foreach (var item in matches)
+        HasMoreItems = _filteredAll.Count > 0;
+        UpdateStatusText();
+
+        if (_filteredAll.Count > 0)
         {
-            FilteredEntries.Add(item);
+            await LoadNextPageAsync(token);
+        }
+    }
+
+    private async Task LoadNextPageAsync(CancellationToken cancellationToken)
+    {
+        var startIndex = FilteredEntries.Count;
+        var batch = _filteredAll.Skip(startIndex).Take(PageSize).ToList();
+        if (batch.Count == 0)
+        {
+            HasMoreItems = false;
+            return;
         }
 
-        StatusText = FilteredEntries.Count == _allItems.Count
-            ? $"{_allItems.Count} titles"
-            : $"{FilteredEntries.Count} of {_allItems.Count} titles";
+        IsLoadingMore = true;
+        await Task.Yield();
+        try
+        {
+            using var semaphore = new SemaphoreSlim(MaxConcurrentPosterDownloads);
+            var tasks = batch.Select(async item =>
+            {
+                await semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    await item.EnsurePosterLoadedAsync(cancellationToken);
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
+
+            await Task.WhenAll(tasks);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            foreach (var item in batch)
+            {
+                FilteredEntries.Add(item);
+            }
+
+            HasMoreItems = FilteredEntries.Count < _filteredAll.Count;
+            UpdateStatusText();
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer filter/search request.
+        }
+        finally
+        {
+            IsLoadingMore = false;
+        }
+    }
+
+    private void UpdateStatusText()
+    {
+        StatusText = _filteredAll.Count == _allItems.Count
+            ? $"{FilteredEntries.Count} of {_allItems.Count} titles"
+            : $"{FilteredEntries.Count} of {_filteredAll.Count} matching ({_allItems.Count} total)";
     }
 }
