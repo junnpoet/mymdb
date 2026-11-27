@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/MyMdb.app/Assets/Icon.png" alt="MyMDB Logo" width="128" />
+</p>
+
 # MyMDB
 
 A fast, lightweight **Android** and **Linux Desktop** viewer for **EMDB (Eric's Movie Database)** collections synced through Google Drive, built with **.NET 10**, **C#**, and **Avalonia UI 12**.
