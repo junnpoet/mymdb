@@ -77,50 +77,50 @@
 
             <!-- Synopsis -->
             <StackPanel Margin="16,0" Spacing="6" IsVisible="{Binding HasPlot}">
-                <TextBlock Text="Synopsis" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Sinopsis" FontSize="16" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding Plot}" TextWrapping="Wrap" LineHeight="21" />
             </StackPanel>
 
             <!-- Details -->
             <StackPanel Margin="16,0" Spacing="6">
-                <TextBlock Text="Details" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Detalles" FontSize="16" FontWeight="SemiBold" />
                 <TextBlock IsVisible="{Binding HasGenres}" TextWrapping="Wrap">
-                    <Run Text="Genres: " FontWeight="SemiBold" />
+                    <Run Text="Géneros: " FontWeight="SemiBold" />
                     <Run Text="{Binding GenresText}" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding HasLanguages}" TextWrapping="Wrap">
-                    <Run Text="Languages: " FontWeight="SemiBold" />
+                    <Run Text="Idiomas: " FontWeight="SemiBold" />
                     <Run Text="{Binding LanguagesText}" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding HasStudio}" TextWrapping="Wrap">
-                    <Run Text="Studio: " FontWeight="SemiBold" />
+                    <Run Text="Estudio: " FontWeight="SemiBold" />
                     <Run Text="{Binding Studio}" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding HasCollection}" TextWrapping="Wrap">
-                    <Run Text="Collection: " FontWeight="SemiBold" />
+                    <Run Text="Colección: " FontWeight="SemiBold" />
                     <Run Text="{Binding CollectionName}" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding HasCertification}" TextWrapping="Wrap">
-                    <Run Text="Certification: " FontWeight="SemiBold" />
+                    <Run Text="Certificación: " FontWeight="SemiBold" />
                     <Run Text="{Binding Certification}" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding HasDirectors}" TextWrapping="Wrap">
-                    <Run Text="Director: " FontWeight="SemiBold" />
+                    <Run Text="Dirección: " FontWeight="SemiBold" />
                     <Run Text="{Binding DirectorsText}" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding HasWriters}" TextWrapping="Wrap">
-                    <Run Text="Writers: " FontWeight="SemiBold" />
+                    <Run Text="Guion: " FontWeight="SemiBold" />
                     <Run Text="{Binding WritersText}" />
                 </TextBlock>
                 <TextBlock IsVisible="{Binding HasComposers}" TextWrapping="Wrap">
-                    <Run Text="Music: " FontWeight="SemiBold" />
+                    <Run Text="Música: " FontWeight="SemiBold" />
                     <Run Text="{Binding ComposersText}" />
                 </TextBlock>
             </StackPanel>
 
             <!-- Cast horizontal strip -->
             <StackPanel Margin="16,0" Spacing="8" IsVisible="{Binding HasCast}">
-                <TextBlock Text="Cast" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Reparto" FontSize="16" FontWeight="SemiBold" />
                 <ScrollViewer HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled">
                     <ItemsControl ItemsSource="{Binding Cast}" Margin="0,0,0,14">
@@ -158,13 +158,13 @@
 
             <!-- Comments -->
             <StackPanel Margin="16,0" Spacing="6" IsVisible="{Binding HasComments}">
-                <TextBlock Text="Comments" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Comentarios" FontSize="16" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding Comments}" TextWrapping="Wrap" />
             </StackPanel>
 
             <!-- Links -->
             <StackPanel Margin="16,0" Spacing="4" IsVisible="{Binding HasLinks}">
-                <TextBlock Text="Links" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Enlaces" FontSize="16" FontWeight="SemiBold" />
                 <SelectableTextBlock Text="{Binding WebLink}"
                                      IsVisible="{Binding HasWebLink}"
                                      FontSize="12"
@@ -193,7 +193,7 @@
                     Padding="20,14"
                     Background="#CC1E1E1E">
                 <StackPanel Spacing="10" HorizontalAlignment="Center">
-                    <TextBlock Text="Loading images..."
+                    <TextBlock Text="Cargando imágenes..."
                                Foreground="White"
                                FontSize="13"
                                HorizontalAlignment="Center" />

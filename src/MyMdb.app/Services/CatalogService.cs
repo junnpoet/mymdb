@@ -13,15 +13,20 @@ namespace MyMdb.app.Services;
 
 public sealed class CatalogService
 {
-    private const string DefaultDriveFolderId = "13DtMNl_5S0DWPuN7KMFMAYJp0pg9PASl";
+    public const string DefaultDriveFolderId = "13DtMNl_5S0DWPuN7KMFMAYJp0pg9PASl";
     private const string DefaultLocalEmdbDirectory = "/mnt/Datos/Gdrive/Personal/Contenido/BD EMDB";
 
     private static readonly HttpClient SharedHttpClient = new();
+    private static Func<CatalogService>? _platformFactory;
 
     private readonly ICatalogDataSource _dataSource;
     private readonly ConcurrentDictionary<string, Bitmap?> _imageCache = new();
 
     public string SourceLabel { get; }
+    public bool RequiresAuthentication => _dataSource.RequiresAuthentication;
+    public bool SupportsSignOut => _dataSource.SupportsSignOut;
+
+    public void SignOut() => _dataSource.SignOut();
 
     public CatalogService(ICatalogDataSource dataSource, string sourceLabel)
     {
@@ -29,8 +34,31 @@ public sealed class CatalogService
         SourceLabel = sourceLabel;
     }
 
+    public static void RegisterPlatformFactory(Func<CatalogService> factory)
+    {
+        _platformFactory = factory;
+    }
+
+    public static CatalogService CreateGoogleDrive(
+        GoogleOAuthConfig config,
+        string folderId,
+        string tokenPath,
+        string cacheDir,
+        InteractiveAuthorizationHandler authorizeHandler)
+    {
+        var oauth = new GoogleOAuthClient(SharedHttpClient, config, tokenPath, authorizeHandler);
+        var api = new GoogleDriveApiClient(SharedHttpClient);
+        var source = new GoogleDriveCatalogSource(oauth, api, folderId, cacheDir);
+        return new CatalogService(source, "Google Drive");
+    }
+
     public static CatalogService CreateDefault()
     {
+        if (_platformFactory is not null)
+        {
+            return _platformFactory();
+        }
+
         var clientJsonPath = ResolveClientJsonPath();
         if (clientJsonPath is not null)
         {
@@ -47,15 +75,7 @@ public sealed class CatalogService
                 "MyMDB");
             var tokenPath = Path.Combine(appDataDir, "gdrive-token.json");
 
-            var oauth = new GoogleOAuthClient(
-                SharedHttpClient,
-                config,
-                tokenPath,
-                DesktopOAuthBroker.AuthorizeAsync);
-            var api = new GoogleDriveApiClient(SharedHttpClient);
-            var source = new GoogleDriveCatalogSource(oauth, api, folderId, cacheDir);
-
-            return new CatalogService(source, "Google Drive");
+            return CreateGoogleDrive(config, folderId, tokenPath, cacheDir, DesktopOAuthBroker.AuthorizeAsync);
         }
 
         var localDir = Environment.GetEnvironmentVariable("MYMDB_EMDB_DIR")

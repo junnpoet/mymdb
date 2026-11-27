@@ -8,16 +8,54 @@
              x:DataType="vm:HomeViewModel"
              x:Class="MyMdb.app.Views.HomeView">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="12,8,12,12" RowSpacing="8">
+    <Grid>
+        <!-- First-time Google Drive connection screen -->
+        <StackPanel IsVisible="{Binding NeedsGoogleDriveAuth}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="16"
+                    Margin="24">
+            <Border Width="96"
+                    Height="96"
+                    CornerRadius="20"
+                    ClipToBounds="True"
+                    HorizontalAlignment="Center">
+                <Image Source="avares://MyMdb.app/Assets/Icon.png"
+                       Stretch="UniformToFill" />
+            </Border>
+            <Button Content="Conectar Google Drive"
+                    Command="{Binding ConnectGoogleDriveCommand}"
+                    IsEnabled="{Binding !IsConnecting}"
+                    HorizontalAlignment="Center"
+                    Padding="24,10"
+                    FontSize="15" />
+            <ProgressBar IsVisible="{Binding IsConnecting}"
+                         IsIndeterminate="{Binding IsConnecting}"
+                         Width="160"
+                         Height="4"
+                         HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding ErrorMessage}"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       Foreground="IndianRed"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       MaxWidth="320" />
+        </StackPanel>
+
+        <!-- Main catalog content -->
+        <Grid IsVisible="{Binding !NeedsGoogleDriveAuth}"
+              RowDefinitions="Auto,Auto,Auto,*"
+              Margin="12,8,12,12"
+              RowSpacing="8">
         <!-- Search bar -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <TextBox Grid.Column="0"
                      Text="{Binding SearchText}"
-                     PlaceholderText="Search title, director, actor..."
+                     PlaceholderText="Buscar título, director, actor..."
                      KeyDown="SearchBox_KeyDown"
                      ClearSelectionOnLostFocus="False" />
             <Button Grid.Column="1"
-                    Content="Search"
+                    Content="Buscar"
                     Command="{Binding SearchCommand}" />
         </Grid>
 
@@ -26,31 +64,31 @@
                       HorizontalScrollBarVisibility="Hidden"
                       VerticalScrollBarVisibility="Disabled">
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Content="All"
+                <Button Content="Todas"
                         Command="{Binding SetFilterCommand}"
                         CommandParameter="All" />
-                <Button Content="Movies"
+                <Button Content="Películas"
                         Command="{Binding SetFilterCommand}"
                         CommandParameter="Movies" />
-                <Button Content="TV Series"
+                <Button Content="Series"
                         Command="{Binding SetFilterCommand}"
                         CommandParameter="Series" />
-                <Button Content="Watched"
+                <Button Content="Vistas"
                         Command="{Binding SetFilterCommand}"
                         CommandParameter="Watched" />
-                <Button Content="Unwatched"
+                <Button Content="Sin ver"
                         Command="{Binding SetFilterCommand}"
                         CommandParameter="Unwatched" />
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Genre filter / Status / Sync / Error -->
+        <!-- Genre filter / Status / Sync / Sign out / Error -->
         <StackPanel Grid.Row="2" Spacing="4">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="6">
                 <ComboBox Grid.Column="0"
                           ItemsSource="{Binding AvailableGenres}"
                           SelectedItem="{Binding SelectedGenre}"
-                          MinWidth="135"
+                          MinWidth="145"
                           FontSize="12" />
                 <TextBlock Grid.Column="1"
                            Text="{Binding StatusText}"
@@ -59,11 +97,22 @@
                            Opacity="0.7"
                            TextTrimming="CharacterEllipsis" />
                 <Button Grid.Column="2"
-                        Content="Sync"
+                        Content="Sincronizar"
                         Command="{Binding SyncCommand}"
                         IsEnabled="{Binding !IsLoading}"
                         FontSize="12"
                         Padding="10,4" />
+                <Button Grid.Column="3"
+                        Command="{Binding RequestSignOutCommand}"
+                        IsVisible="{Binding SupportsSignOut}"
+                        IsEnabled="{Binding !IsLoading}"
+                        ToolTip.Tip="Cerrar sesión"
+                        AutomationProperties.Name="Cerrar sesión"
+                        Padding="8,5">
+                    <PathIcon Width="16"
+                              Height="16"
+                              Data="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z" />
+                </Button>
             </Grid>
             <TextBlock Text="{Binding ErrorMessage}"
                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -115,11 +164,11 @@
                                                    FontSize="12"
                                                    FontWeight="SemiBold"
                                                    Foreground="#E0A800" />
-                                        <TextBlock Text="TV"
+                                        <TextBlock Text="Serie"
                                                    IsVisible="{Binding IsTvSeries}"
                                                    FontSize="11"
                                                    Opacity="0.75" />
-                                        <TextBlock Text="Watched"
+                                        <TextBlock Text="Vista"
                                                    IsVisible="{Binding IsWatched}"
                                                    FontSize="11"
                                                    Foreground="#4CAF50" />
@@ -154,5 +203,40 @@
                 </Grid>
             </StackPanel>
         </ScrollViewer>
+        </Grid>
+
+        <!-- Sign-out confirmation modal (works on both Desktop and Android) -->
+        <Border IsVisible="{Binding IsSignOutConfirmOpen}"
+                Background="#66000000">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    CornerRadius="12"
+                    Padding="20"
+                    MaxWidth="320"
+                    Margin="24"
+                    Background="#F2242424">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="¿Cerrar sesión?"
+                               Foreground="White"
+                               FontSize="17"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="Se desconectará tu cuenta de Google Drive, pero tu caché local se mantendrá."
+                               Foreground="#DDDDDD"
+                               FontSize="13"
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Spacing="8">
+                        <Button Content="Cancelar"
+                                Command="{Binding CancelSignOutCommand}"
+                                Foreground="White" />
+                        <Button Content="Cerrar sesión"
+                                Command="{Binding ConfirmSignOutCommand}"
+                                Background="#C62828"
+                                Foreground="White" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </ContentPage>

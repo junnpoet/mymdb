@@ -47,8 +47,8 @@ public sealed partial class MediaItemViewModel : ViewModelBase
         if (Entry.IsTvSeries)
         {
             metaParts.Add(string.IsNullOrEmpty(Entry.SeasonsRange)
-                ? "TV Series"
-                : $"Seasons {Entry.SeasonsRange}");
+                ? "Serie"
+                : $"Temporadas {Entry.SeasonsRange}");
         }
         else if (Entry.RuntimeMinutes is { } minutes)
         {
@@ -61,7 +61,7 @@ public sealed partial class MediaItemViewModel : ViewModelBase
         }
 
         MetaLine = string.Join(" · ", metaParts);
-        GenresLine = string.Join(", ", Entry.Genres.Take(3));
+        GenresLine = string.Join(", ", Entry.Genres.Take(3).Select(SpanishLabels.Genre));
 
         var searchable = new List<string> { Entry.Title };
         if (!string.IsNullOrEmpty(Entry.OriginalTitle))

@@ -15,7 +15,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 {
     private const int PageSize = 20;
     private const int MaxConcurrentPosterDownloads = 6;
-    private const string AllGenresOption = "All genres";
+    private const string AllGenresOption = "Todos los géneros";
 
     private readonly CatalogService _catalogService;
     private List<MediaItemViewModel> _allItems = new();
@@ -34,6 +34,15 @@ public sealed partial class HomeViewModel : ViewModelBase
     public partial string SelectedGenre { get; set; } = AllGenresOption;
 
     [ObservableProperty]
+    public partial bool NeedsGoogleDriveAuth { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsConnecting { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsSignOutConfirmOpen { get; set; }
+
+    [ObservableProperty]
     public partial bool IsLoading { get; set; } = true;
 
     [ObservableProperty]
@@ -43,12 +52,13 @@ public sealed partial class HomeViewModel : ViewModelBase
     public partial bool HasMoreItems { get; set; }
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = "Loading catalog...";
+    public partial string StatusText { get; set; } = "Cargando catálogo...";
 
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
 
     public bool ShowLoadMoreButton => HasMoreItems && !IsLoadingMore;
+    public bool SupportsSignOut => _catalogService.SupportsSignOut;
 
     public ObservableCollection<string> AvailableGenres { get; } = new() { AllGenresOption };
     public ObservableCollection<MediaItemViewModel> FilteredEntries { get; } = new();
@@ -82,7 +92,61 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         _loaded = true;
+        if (_catalogService.RequiresAuthentication)
+        {
+            NeedsGoogleDriveAuth = true;
+            IsLoading = false;
+            return;
+        }
+
         await LoadCoreAsync(forceRefresh: false);
+    }
+
+    [RelayCommand]
+    private async Task ConnectGoogleDriveAsync()
+    {
+        if (IsConnecting)
+        {
+            return;
+        }
+
+        IsConnecting = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var succeeded = await LoadCoreAsync(forceRefresh: true);
+            if (succeeded && !_catalogService.RequiresAuthentication)
+            {
+                NeedsGoogleDriveAuth = false;
+            }
+        }
+        finally
+        {
+            IsConnecting = false;
+        }
+    }
+
+    [RelayCommand]
+    private void RequestSignOut()
+    {
+        IsSignOutConfirmOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelSignOut()
+    {
+        IsSignOutConfirmOpen = false;
+    }
+
+    [RelayCommand]
+    private void ConfirmSignOut()
+    {
+        IsSignOutConfirmOpen = false;
+        _pageLoadCts?.Cancel();
+        _catalogService.SignOut();
+        ErrorMessage = null;
+        NeedsGoogleDriveAuth = true;
     }
 
     [RelayCommand]
@@ -118,13 +182,13 @@ public sealed partial class HomeViewModel : ViewModelBase
     public DetailViewModel CreateDetailViewModel(MediaItemViewModel item) =>
         new(item.Entry, _collections, _catalogService);
 
-    private async Task LoadCoreAsync(bool forceRefresh)
+    private async Task<bool> LoadCoreAsync(bool forceRefresh)
     {
         IsLoading = true;
         ErrorMessage = null;
         StatusText = forceRefresh
-            ? $"Syncing with {_catalogService.SourceLabel}..."
-            : $"Loading from {_catalogService.SourceLabel}...";
+            ? $"Sincronizando con {_catalogService.SourceLabel}..."
+            : $"Cargando desde {_catalogService.SourceLabel}...";
 
         try
         {
@@ -138,6 +202,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
             var genres = _allItems
                 .SelectMany(e => e.Entry.Genres)
+                .Select(SpanishLabels.Genre)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
@@ -155,11 +220,19 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             await ApplyFiltersAsync();
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            ErrorMessage = "Autenticación cancelada.";
+            StatusText = "Autenticación cancelada";
+            return false;
         }
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
-            StatusText = "Failed to load catalog";
+            StatusText = "Error al cargar el catálogo";
+            return false;
         }
         finally
         {
@@ -190,7 +263,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             && !string.Equals(SelectedGenre, AllGenresOption, StringComparison.Ordinal))
         {
             matches = matches.Where(m =>
-                m.Entry.Genres.Contains(SelectedGenre, StringComparer.OrdinalIgnoreCase));
+                m.Entry.Genres.Any(g => string.Equals(SpanishLabels.Genre(g), SelectedGenre, StringComparison.OrdinalIgnoreCase)));
         }
 
         if (!string.IsNullOrEmpty(query))
@@ -266,7 +339,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private void UpdateStatusText()
     {
         StatusText = _filteredAll.Count == _allItems.Count
-            ? $"{FilteredEntries.Count} of {_allItems.Count} titles"
-            : $"{FilteredEntries.Count} of {_filteredAll.Count} matching ({_allItems.Count} total)";
+            ? $"{FilteredEntries.Count} de {_allItems.Count} títulos"
+            : $"{FilteredEntries.Count} de {_filteredAll.Count} resultados ({_allItems.Count} en total)";
     }
 }

@@ -47,10 +47,10 @@ public sealed partial class DetailViewModel : ViewModelBase
     public bool HasRatings => !string.IsNullOrEmpty(RatingsLine);
 
     public string WatchStatusLine { get; }
-    public string GenresText => string.Join(", ", Entry.Genres);
+    public string GenresText => string.Join(", ", Entry.Genres.Select(SpanishLabels.Genre));
     public bool HasGenres => Entry.Genres.Count > 0;
 
-    public string LanguagesText => string.Join(", ", Entry.Languages);
+    public string LanguagesText => string.Join(", ", Entry.Languages.Select(SpanishLabels.Language));
     public bool HasLanguages => Entry.Languages.Count > 0;
 
     public string DirectorsText => string.Join(", ", Entry.Directors);
@@ -103,8 +103,8 @@ public sealed partial class DetailViewModel : ViewModelBase
         if (entry.IsTvSeries)
         {
             var tvLabel = string.IsNullOrEmpty(entry.SeasonsRange)
-                ? "TV Series"
-                : $"TV Series · Seasons {entry.SeasonsRange}";
+                ? "Serie"
+                : $"Serie · Temporadas {entry.SeasonsRange}";
             if (entry.EpisodeCount is { } eps)
             {
                 tvLabel += $" ({eps} ep.)";
@@ -127,7 +127,7 @@ public sealed partial class DetailViewModel : ViewModelBase
         var ratings = new List<string>();
         if (entry.ImdbRating is { } imdb)
         {
-            var votes = entry.ImdbVotes is { } v ? $" ({v:N0} votes)" : string.Empty;
+            var votes = entry.ImdbVotes is { } v ? $" ({v:N0} votos)" : string.Empty;
             ratings.Add($"IMDb ★ {imdb:F1}{votes}");
         }
 
@@ -139,20 +139,20 @@ public sealed partial class DetailViewModel : ViewModelBase
         RatingsLine = string.Join("  ·  ", ratings);
 
         var status = new List<string>();
-        status.Add(entry.SeenCount > 0 ? $"Watched ({entry.SeenCount}x)" : "Not watched yet");
+        status.Add(entry.SeenCount > 0 ? $"Vista ({entry.SeenCount}x)" : "Sin ver");
         if (entry.DateLastWatched is { } lastWatched)
         {
-            status.Add($"Last: {lastWatched:yyyy-MM-dd}");
+            status.Add($"Última vez: {lastWatched:yyyy-MM-dd}");
         }
 
         if (entry.DateAdded is { } added)
         {
-            status.Add($"Added: {added:yyyy-MM-dd}");
+            status.Add($"Agregada: {added:yyyy-MM-dd}");
         }
 
         if (entry.IsFavorite)
         {
-            status.Add("Favorite");
+            status.Add("Favorita");
         }
 
         WatchStatusLine = string.Join(" · ", status);
