@@ -4,12 +4,40 @@
     <TargetFramework>net10.0-android</TargetFramework>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
-    <ApplicationId>com.CompanyName.MyMdb.app</ApplicationId>
+    <ApplicationId>com.mymdb.app</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' and Exists('$(HOME)/Android/Sdk')">$(HOME)/Android/Sdk</AndroidSdkDirectory>
+    <JavaSdkDirectory Condition="'$(JavaSdkDirectory)' == '' and Exists('/usr/lib/jvm/java-21-openjdk')">/usr/lib/jvm/java-21-openjdk</JavaSdkDirectory>
   </PropertyGroup>
+
+  <Target Name="GenerateAndroidOAuthConfig" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_AndroidClientJsonPath Condition="'$(GoogleAndroidClientJson)' != ''">$(GoogleAndroidClientJson)</_AndroidClientJsonPath>
+      <_AndroidClientJsonPath Condition="'$(_AndroidClientJsonPath)' == '' and Exists('$(HOME)/.config/MyMDB/android-client-id.json')">$(HOME)/.config/MyMDB/android-client-id.json</_AndroidClientJsonPath>
+      <_AndroidClientJsonContent Condition="'$(_AndroidClientJsonPath)' != '' and Exists('$(_AndroidClientJsonPath)')">$([System.IO.File]::ReadAllText('$(_AndroidClientJsonPath)'))</_AndroidClientJsonContent>
+      <_ExtractedClientId Condition="'$(GoogleAndroidClientId)' != ''">$(GoogleAndroidClientId)</_ExtractedClientId>
+      <_ExtractedClientId Condition="'$(_ExtractedClientId)' == '' and '$(_AndroidClientJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match('$(_AndroidClientJsonContent)', '"client_id"\s*:\s*"([^"]+)"').Groups[1].Value)</_ExtractedClientId>
+      <_ClientIdPrefix>$([System.Text.RegularExpressions.Regex]::Replace('$(_ExtractedClientId)', '\.apps\.googleusercontent\.com$', ''))</_ClientIdPrefix>
+      <_RedirectScheme Condition="'$(_ClientIdPrefix)' != ''">com.googleusercontent.apps.$(_ClientIdPrefix)</_RedirectScheme>
+      <_RedirectScheme Condition="'$(_RedirectScheme)' == ''">com.mymdb.app</_RedirectScheme>
+      <_GeneratedOAuthConfigFile>$(IntermediateOutputPath)AndroidOAuthBuildConfig.g.cs</_GeneratedOAuthConfigFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_OAuthConfigLines Include="namespace MyMdb.app.Android%3B" />
+      <_OAuthConfigLines Include="internal static class AndroidOAuthBuildConfig" />
+      <_OAuthConfigLines Include="{" />
+      <_OAuthConfigLines Include="    public const string ClientId = &quot;$(_ExtractedClientId)&quot;%3B" />
+      <_OAuthConfigLines Include="    public const string RedirectScheme = &quot;$(_RedirectScheme)&quot;%3B" />
+      <_OAuthConfigLines Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_GeneratedOAuthConfigFile)" Lines="@(_OAuthConfigLines)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(_GeneratedOAuthConfigFile)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <AndroidResource Include="Icon.png">
@@ -19,6 +47,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Xamarin.AndroidX.Browser" Version="1.9.0.1" />
     <PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.2.0.2" />
   </ItemGroup>
 
